@@ -2,23 +2,24 @@
 const { OpenAI } = require('openai');
 const fs = require('fs');
 const path = require('path');
-
+const os = require('os'); // ✅ aggiunto
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 async function uploadFileToOpenAI(file) {
   try {
-    const tempPath = path.join(__dirname, '..', 'temp', file.name);
+    // ✅ salva il file in una directory temporanea di sistema
+    const tempPath = path.join(os.tmpdir(), file.name);
 
-    // Salviamo temporaneamente il file localmente
+    // Salvataggio temporaneo del file
     await file.mv(tempPath);
 
-    // Carichiamo su OpenAI
+    // Caricamento su OpenAI
     const uploaded = await openai.files.create({
       file: fs.createReadStream(tempPath),
       purpose: 'assistants',
     });
 
-    // Pulizia file temporaneo
+    // Rimozione file temporaneo
     fs.unlinkSync(tempPath);
 
     return {
