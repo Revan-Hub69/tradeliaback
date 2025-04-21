@@ -1,3 +1,4 @@
+// routes/chat.js
 const express = require('express');
 const router = express.Router();
 const { OpenAI } = require('openai');
@@ -33,12 +34,13 @@ router.post('/', async (req, res) => {
       content: enrichedMessage
     });
 
-    // 4. Avvia la run
+    // 4. Avvia la run con uso tool abilitato
     const run = await openai.beta.threads.runs.create(threadId, {
-      assistant_id: assistantId
+      assistant_id: assistantId,
+      tool_choice: "auto" // ✅ Fa partire automaticamente i tuoi tool registrati
     });
 
-    // 5. Attendi completamento o tool_call
+    // 5. Polling finché non finisce o richiede tool
     let status = run.status;
     let attempts = 0;
     const maxAttempts = 25;
@@ -48,6 +50,7 @@ router.post('/', async (req, res) => {
       const updated = await openai.beta.threads.runs.retrieve(threadId, run.id);
       status = updated.status;
 
+      // Se richiede azione tool
       if (status === "requires_action") {
         const toolCalls = updated.required_action.submit_tool_outputs.tool_calls;
         const outputs = await resolveTools(toolCalls);
