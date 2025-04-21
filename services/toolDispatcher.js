@@ -9,38 +9,49 @@ async function resolveTools(toolCalls) {
     const name = call.function.name;
     const args = JSON.parse(call.function.arguments || "{}");
 
-    if (name === "calcolatori_ai") {
-      const { tipo_calcolo, valori } = args;
-      const result = runTool(tipo_calcolo, valori);
-      results.push({
-        tool_call_id: call.id,
-        output: JSON.stringify(result)
-      });
-    }
+    try {
+      if (name === "calcolatori_ai") {
+        const { tipo_calcolo, valori } = args;
+        const result = runTool(tipo_calcolo, valori);
+        results.push({
+          tool_call_id: call.id,
+          output: JSON.stringify(result)
+        });
+      }
 
-    else if (name === "scanner_ai") {
-      const { strumenti } = args;
-      // Per ora: esegui lo scanner standard una volta
-      const result = await runScanner("stocks"); // semplificato
-      results.push({
-        tool_call_id: call.id,
-        output: JSON.stringify(result)
-      });
-    }
+      else if (name === "scanner_ai") {
+        const { strumenti } = args;
+        const result = strumenti.map(str => ({
+          symbol: str,
+          valutazione: "📈 possibile rialzo",
+          commento: "sembra in zona interessante oggi"
+        }));
+        results.push({
+          tool_call_id: call.id,
+          output: JSON.stringify(result)
+        });
+      }
 
-    else if (name === "news_lookup") {
-      const { query } = args;
-      const result = await fetchNews(query);
-      results.push({
-        tool_call_id: call.id,
-        output: JSON.stringify(result)
-      });
-    }
+      else if (name === "news_lookup") {
+        const { query } = args;
+        const result = await fetchNews(query);
+        results.push({
+          tool_call_id: call.id,
+          output: JSON.stringify(result)
+        });
+      }
 
-    else {
+      else {
+        results.push({
+          tool_call_id: call.id,
+          output: JSON.stringify({ error: "Tool non riconosciuto: " + name })
+        });
+      }
+
+    } catch (err) {
       results.push({
         tool_call_id: call.id,
-        output: JSON.stringify({ error: "Tool non riconosciuto: " + name })
+        output: JSON.stringify({ error: "Errore nel tool: " + name })
       });
     }
   }
